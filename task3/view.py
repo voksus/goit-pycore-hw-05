@@ -6,7 +6,7 @@ COL_RESET  = '\033[0m'    # Стандартний колір
 COL_RED    = '\033[31m'   # Червоний
 COL_YELLOW = '\033[33m'   # Жовтий
 COL_BLUE   = '\033[34m'   # Синій
-COL_GRAY   = '\033[2;37m' # Фіолетовий
+COL_GRAY   = '\033[2;37m' # Сірий
 COL_CYAN   = '\033[36m'   # Бірюзовий
 # Константи для скрол-бара:
 BACK_BLUE        = '\033[44m'   # Синій фон
@@ -29,7 +29,7 @@ def get_terminal_size():
 cols, rows = get_terminal_size()
 
 # Максимальна кількість рядків логів, що одночасно відображаються
-MAX_ROWS_ON_SCREEN = min(20, rows - 4) # Розмір блоку виводу залежить від розміру консолі, але не більше 20 рядків
+MAX_ROWS_ON_SCREEN = min(24, max(rows - 4, 5)) # Розмір блоку виводу залежить від розміру консолі, але не більше 20 рядків
 
 def view_interactive_log(logs: dict[int:str]):
     """
@@ -43,7 +43,7 @@ def view_interactive_log(logs: dict[int:str]):
         print("═" * 120)
         return
 
-    print(f"╒{"═" * 4}╡{COL_GRAY} Керування: ↑↓ / PgUp PgDn / Esc для виходу {COL_RESET}╞{"═" * (cols - 53)}╕")
+    print(f"╒{"═" * 4}╡{COL_GRAY} Керування: стрілки ↑↓ / PgUp PgDn / Esc для виходу {COL_RESET}╞{"═" * (cols - 61)}╕")
 
     def draw_screen(start=MAX_ROWS_ON_SCREEN+1):
         # Переміщення курсора у верхню ліву точку для оновлення екрану

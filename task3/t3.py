@@ -5,27 +5,43 @@ from enum import Enum
 from typing import List, Dict, Set
 
 # Константи для кольорів (ANSI-коди)
-COL_RESET     = '\033[0m'    # Стандартний колір
-COL_RED       = '\033[31m'   # Червоний
-COL_GREEN     = '\033[32m'   # Зелений
-COL_YELLOW    = '\033[33m'   # Жовтий
-COL_BLUE      = '\033[34m'   # Синій
-COL_GRAY      = '\033[30m'   # Сірий
-COL_INV_RED   = '\033[41m'   # Інверсний червоний (на червоному фоні)
-COL_INV_GREEN = '\033[1;42m' # Інверсний зелений (жирний на зеленому фоні)
+COL_RESET      = '\033[0m'      # Стандартний колір
+COL_RED        = '\033[31m'     # Червоний
+COL_GREEN      = '\033[32m'     # Зелений
+COL_YELLOW     = '\033[33m'     # Жовтий
+COL_BLUE       = '\033[34m'     # Синій
+COL_GRAY       = '\033[30m'     # Сірий
+COL_INV_YELLOW = '\033[1;7;33m' # Інверсний жовтий жирний (на зеленому фоні)
+COL_INV_RED    = '\033[41m'     # Інверсний червоний (на червоному фоні)
+COL_INV_GREEN  = '\033[1;42m'   # Інверсний зелений жирний (на зеленому фоні)
 
 print("\033[H\033[J", end='')  # Переміщує курсор у верхній лівий кут і очищує екран
 
 # Рівні логування
 class LogLevel(Enum):
-    CRITICAL = "CRITICAL"  # Інверсний червоний
-    FATAL    = "FATAL"     # Інверсний червоний
-    ERROR    = "ERROR"     # Червоний
-    WARN     = "WARN"      # Жовтий
-    INFO     = "INFO"      # Зелений
-    DEBUG    = "DEBUG"     # Синій
-    TRACE    = "TRACE"     # Стандартний
-    VERBOSE  = "VERBOSE"   # Стандартний
+    CRITICAL = ("CRITICAL", COL_INV_RED)  # Інверсний червоний
+    FATAL    = ("FATAL",    COL_INV_RED)  # Інверсний червоний
+    ERROR    = ("ERROR",    COL_RED)      # Червоний
+    WARN     = ("WARN",     COL_YELLOW)   # Жовтий
+    INFO     = ("INFO",     COL_GREEN)    # Зелений
+    DEBUG    = ("DEBUG",    COL_BLUE)     # Синій
+    TRACE    = ("TRACE",    COL_RESET)    # Стандартний
+    VERBOSE  = ("VERBOSE",  COL_RESET)    # Стандартний
+
+    @property
+    def color(self):
+        return self.value[1]
+
+    @property
+    def label(self):
+        return self.value[0]
+
+    @classmethod
+    def from_string(cls, level_str: str):
+        for level in cls:
+            if level.label == level_str:
+                return level
+        raise ValueError("Невідомий рівень логування")
 
 # Завантаження логів із файлу
 def load_logs(file_path: str) -> List[str]:
@@ -34,22 +50,22 @@ def load_logs(file_path: str) -> List[str]:
             lines = file.readlines()
         return lines
     except FileNotFoundError:
-        print(f"{COL_RED}❌ Файл {COL_YELLOW}{file.absolute()}{COL_RED} не знайдено!{COL_RESET}")
-        sys.exit(1)
+        print(f"{COL_RED}❌ Файл {COL_YELLOW}{file_path}{COL_RED} не знайдено!{COL_RESET}")
+        sys.exit(0)
     except Exception as e:
         print(f"{COL_RED}❌ Невідома помилка:\n{e}{COL_RESET}")
-        sys.exit(1)
+        sys.exit(0)
 
 # Парсинг окремого рядка логу
-def parse_log_line(line: str) -> dict[str,LogLevel,str]:
+def parse_log_line(line: str) -> dict:
     parts = line.strip().split(maxsplit=3)
     if len(parts) < 4:
         raise ValueError("Некоректний формат рядка логу")
 
-    timestamp, level, description = f"{parts[0]} {parts[1]}", parts[2], parts[3]
+    timestamp, level_str, description = f"{parts[0]} {parts[1]}", parts[2], parts[3]
 
     try:
-        log_level = LogLevel(level)
+        log_level = LogLevel.from_string(level_str)
     except ValueError:
         raise ValueError("Невідомий рівень логування")
 
@@ -64,17 +80,8 @@ def format_logs_with_colors(logs: Dict[int, Dict], include_invalid: bool = False
     formatted_logs = {}
     for index, log in logs.items():
         if "level" in log:
-            color = {
-                LogLevel.CRITICAL: COL_INV_RED,
-                LogLevel.FATAL   : COL_INV_RED,
-                LogLevel.ERROR   : COL_RED,
-                LogLevel.WARN    : COL_YELLOW,
-                LogLevel.INFO    : COL_GREEN,
-                LogLevel.DEBUG   : COL_BLUE,
-                LogLevel.TRACE   : COL_RESET,
-                LogLevel.VERBOSE : COL_RESET,
-            }.get(log["level"], COL_RESET)
-            formatted_logs[index] = f"{log['timestamp']} {color}{log['level'].value:5}{COL_RESET} {log['description']}\033[K"
+            level : LogLevel = log["level"]
+            formatted_logs[index] = f"{log['timestamp']} {level.color}{level.label:5}{COL_RESET} {log['description']}\033[K"
         elif include_invalid:
             formatted_logs[index] = f"{COL_RED}!Некоректний запис!{COL_GRAY} : — : {COL_YELLOW}{log['raw']}\033[K{COL_RESET}"
     return formatted_logs
@@ -95,27 +102,12 @@ def display_log_counts(counts: Dict[LogLevel, int]):
     
     for level in sorted_levels:
         count = counts[level]
-        color = {
-            LogLevel.CRITICAL: COL_INV_RED,
-            LogLevel.FATAL   : COL_INV_RED,
-            LogLevel.ERROR   : COL_RED,
-            LogLevel.WARN    : COL_YELLOW,
-            LogLevel.INFO    : COL_GREEN,
-            LogLevel.DEBUG   : COL_BLUE,
-            LogLevel.TRACE   : COL_RESET,
-            LogLevel.VERBOSE : COL_RESET,
-        }.get(level, COL_RESET)
-
-        print(f"║ {color}{level.value:<16}{COL_RESET} │ {color}{count:<9}{COL_RESET} ║")
+        print(f"║ {level.color}{level.label:<16}{COL_RESET} │ {level.color}{count:<9}{COL_RESET} ║")
 
     print("╚══════════════════╧═══════════╝")
 
 def main():
     args = sys.argv[1:]
-
-    # args = "task3\logfile.log --level ERROR WARN"
-    args = "task3\logfile.log --all"
-    args = args.split()
 
     if not args or "--help" in args or "-h" in args:
         print(f"╔{'═' * 65}╗")
@@ -132,20 +124,17 @@ def main():
 
     for idx, line in enumerate(logs_raw):
         try:
-            line = parse_log_line(line)
-            if line:
-                parsed_logs[idx] = line
-        except ValueError as ve:
+            parsed_logs[idx] = parse_log_line(line)
+        except ValueError:
             parsed_logs[idx] = {"raw": line.strip()}
             incorrect_count += 1
-
-    if incorrect_count:
-        print(f"{COL_YELLOW}Увага! Файл містить некоректні рядки у кількості: {incorrect_count}{COL_RESET}")
 
     counts = count_logs_by_level(parsed_logs)
     display_log_counts(counts)
 
-    # if "--all" in args or "-a" in args or "ALL" in args:
+    if incorrect_count:
+        print(f"{COL_INV_YELLOW} Увага! Файл містить некоректні рядки у кількості: {incorrect_count} {COL_RESET}")
+
     if any(arg in args for arg in ["--all", "-a", "ALL"]):
         print(f"\n{COL_INV_GREEN} Деталі логів (всі записи файлу): {COL_RESET}")
         filtered_logs = format_logs_with_colors(parsed_logs, include_invalid=True)
@@ -156,12 +145,12 @@ def main():
     elif "--level" in args:
         level_index = args.index("--level") + 1
         if level_index < len(args):
-            level_strs = map(lambda l: l.upper(), args[level_index:])
+            level_strs = map(str.upper, args[level_index:])
             try:
-                levels = {LogLevel(level_str) for level_str in level_strs}
+                levels = {LogLevel.from_string(level_str) for level_str in level_strs}
                 # Фільтрація логів по типам
                 filtered_logs = filter_logs_by_level(parsed_logs, levels)
-                print(f"\n{COL_INV_GREEN} Рівні: {', '.join(level.value for level in levels)}. Деталі логів: {COL_RESET}")
+                print(f"\n{COL_INV_GREEN} Рівні: {', '.join(level.label for level in levels)}. Деталі логів: {COL_RESET}")
                 # Мапінг логів: перетворення значення внутрішнього словника на кольоровий рядок
                 filtered_logs = format_logs_with_colors(filtered_logs)
 
