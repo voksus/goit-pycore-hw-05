@@ -38,9 +38,9 @@ class LogLevel(Enum):
 
     @classmethod
     def from_string(cls, level_str: str):
-        for level in cls:
-            if level.label == level_str:
-                return level
+        level = next(filter(lambda lvl: lvl.label == level_str, cls), None)
+        if level is not None:
+            return level
         raise ValueError("Невідомий рівень логування")
 
 # Завантаження логів із файлу
@@ -133,7 +133,7 @@ def main():
     display_log_counts(counts)
 
     if incorrect_count:
-        print(f"{COL_INV_YELLOW} Увага! Файл містить некоректні рядки у кількості: {incorrect_count} {COL_RESET}")
+        print(f"{COL_INV_YELLOW} Увага! Файл містить некоректні рядки. Кількість: {incorrect_count} шт. {COL_RESET}")
 
     if any(arg in args for arg in ["--all", "-a", "ALL"]):
         print(f"\n{COL_INV_GREEN} Деталі логів (всі записи файлу): {COL_RESET}")
