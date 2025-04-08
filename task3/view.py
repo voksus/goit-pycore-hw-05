@@ -12,8 +12,8 @@ COL_CYAN   = '\033[36m'   # Бірюзовий
 BACK_BLUE        = '\033[44m'   # Синій фон
 SCROLL_ARROW_UP  = BACK_BLUE + "▲" + COL_RESET
 SCROLL_ARROW_DN  = BACK_BLUE + "▼" + COL_RESET
-SCROLL_BAR_EMPTY = COL_BLUE + "░" + COL_RESET
-SCROLL_BAR_CUR   = COL_CYAN + "█" + COL_RESET
+SCROLL_BAR_EMPTY = COL_BLUE  + "░" + COL_RESET
+SCROLL_BAR_CUR   = COL_CYAN  + "█" + COL_RESET
 
 current_start = 0  # Індекс першого відображеного рядка
 

@@ -108,6 +108,8 @@ def display_log_counts(counts: Dict[LogLevel, int]):
 
 def main():
     args = sys.argv[1:]
+    if not args:
+        args = R"task3\logfile.log --all".split()  # Для тестування в VSCode
 
     if not args or "--help" in args or "-h" in args:
         print(f"╔{'═' * 65}╗")
